@@ -285,9 +285,7 @@ This constitutes the interface.
 
 
 \begin{figure}[htbp]
-    \begin{center}
-        
-    \caption{Reduction rules for Peano numerals}
+    \centering    
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
     
@@ -318,6 +316,7 @@ This constitutes the interface.
     \end{scope}
 \end{tikzpicture}
 \caption{ Rule for $0 + x = x$}
+\label{fig:peano_rules_0_x}
 \end{subfigure}
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
@@ -362,9 +361,10 @@ This constitutes the interface.
     \end{scope}
 \end{tikzpicture}
 \caption{ Rule for $S(x) + y = S(x + y)$}
+\label{fig:peano_rules_x_y}
 \end{subfigure}
+\caption{Reduction rules for Peano numerals}
 \label{fig:peano_rules}
-\end{center}
 \end{figure}
 
 As shown in Lafont's work~\cite{10.1145/96709.96718}, $\lambda$-calculus can be expressed through this formalism that makes interaction nets general purpose computation model.
@@ -376,43 +376,46 @@ At the same time, if it is possible to introduce a powerful language for describ
 
 \subsection{Implementations of Interaction Nets}
 
+We are focused on languages and runtimes. 
+
 Notable implementations include Inpla, HVM, and Vine. In OCaml~\cite{Huber_2025} (Comparison, Inpla fastest)
+Other projects implement embeddings interaction nets in languages such as OCaml and Haskell and use respective runtime to run.
 
-    Vine --- high-level language (Rust-like) + interaction-nets-based intermediate representation + parallel virtual machine.
 
-    HVM --- high-level language (JS-like) + interaction-nets-based intermediate representation + parallel virtual machine (+GPGPU?).
+\textbf{Inpla} project\footnote{}~\cite{!!!} provides a low-level interaction nets programming language, equipped with a parallel runtime.
+Programming in Inpla requires defining a custom set of rewriting rules for a chosen set of agents.
+Computation begins when two agents are connected via their primary ports.
 
-    Inpla --- mature enough, demonstrates good performance and scalability. Interaction-nets-based language + parallel VM.
+\begin{listing}[H]
+\begin{minted}[texcomments, escapeinside=||]{ocaml}
+(* Defining custom rules *)
+Add(r, x) >< Z => (* Inpla variant of rule presented in Fig. \ref{fig:peano_rules_0_x} *)
+    r ~ x;
+Add(r, x) >< S(y) => (* Inpla variant of rule presented in Fig. \ref{fig:peano_rules_x_y} *)
+    Add(r, S(x)) ~ y;
+
+(* 1 + 1: connecting Add and S *)
+Add(r, S(Z)) ~ S(Z);
+(* Printing the result and freeing the `r` name *)
+r; free r;
+\end{minted}
+\caption{Peano numerals addition in Inpla}
+\label{lst:inpla_peano_add}
+\end{listing}
+
+Inpla --- mature enough, demonstrates good performance and scalability. Interaction-nets-based language + parallel VM.
+
+\textbf{Vine}
+
+IVY, IVM. Differences with Inpla: fixed set of agents (and respective rewriting rules).
+Vine --- high-level language (Rust-like) + interaction-nets-based intermediate representation + parallel virtual machine.
+
+\textbf{HVM}: fixed set of agents (and respective rewriting rules). Bend.  Acceleration in Cuda. \footnote{Issues, problems, eg with QTree}
+HVM --- high-level language (JS-like) + interaction-nets-based intermediate representation + parallel virtual machine (+GPGPU?).
+
+
+Other projects like !!! but no active development or instable, or not mature enough.
 
 No information is available on the evaluation or comparison of Vine and HVM.
 Typical benchmarks for these systems include Fibonacci, Ackermann, sorting, and list traversal. 
 No graph analysis algorithms while such algorithms looks grate candidates for interaction nets.
-Other projects implement interaction nets in languages such as OCaml and Haskell.
-
-
-We are focused on languages and runtimes. 
-
-In Haskell and OCaml
-
-Inpla is a low-level interaction nets programming language, equipped with a parallel runtime. Programming in Inpla requires defining a custom set of rewriting rules for a chosen set of agents. Computation begins when two agents are connected via their primary ports.
-\begin{listing}[H]
-\caption{Peano numerals addition in Inpla}
-\begin{verbatim}
-// Defining custom rules
-Add(r, x) >< Z =>
-    r ~ x;
-Add(r, x) >< S(y) =>
-    Add(r, S(x)) ~ y;
-
-// 1 + 1: connecting Add and S
-Add(r, S(Z)) ~ S(Z);
-// Printing the result and freeing the `r` name
-r; free r;
-\end{verbatim}
-\end{listing}
-Vine
-
-IVY, IVM. Differences with Inpla: fixed set of agents (and respective rewriting rules).
-
-
-HVM: fixed set of agents (and respective rewriting rules). Bend.  Acceleration in Cuda. \footnote{Issues, problems, eg with QTree}
