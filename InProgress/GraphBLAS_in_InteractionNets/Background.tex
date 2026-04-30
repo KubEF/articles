@@ -5,11 +5,9 @@ We also provide the basics of interaction nets, discuss implementations of inter
 
 \subsection{GraphBLAS}
 
-The goal of the GraphBLAS API is to provide basic building blocks for constructing high-performance graph analysis algorithms.
+The goal of the GraphBLAS API~\cite{9460572} is to provide basic building blocks for constructing high-performance graph analysis algorithms.
 To achieve this goal, GraphBLAS utilizes \textbf{sparse generic} linear algebra.
 Operations over sparse generic matrices and vectors parameterized by semiring-like structures provide a powerful basis for expressing a wide range of graph analysis algorithms~\cite{8778338}.
-
-GraphBLAS API: C API, C++ API, implementations in Java, Julia, etc.
 
 Challenges on this path include the implementation of high-performance generic operations over sparse data structures.
 Imbalanced subtasks together with irregular data access patterns make load balancing — and thus efficient parallel implementation — hard.
@@ -23,6 +21,7 @@ There are also other problems discussed in ``What Did GraphBLAS Get Wrong?'' by 
 SuiteSparse:GraphBLAS serves as the reference implementation of this API, offering a highly optimized, multi-threaded C library that supports various sparse matrix formats.
 Building on this foundation, LAGraph provides a collection of production-ready graph algorithms (e.g., PageRank, connected components, triangle counting) implemented using SuiteSparse:GraphBLAS.
 Currently it is one of the state-of-the-art (SOTA) solutions for high-performance graph analysis, thus we use it as a baseline for evaluation.
+GraphBLAS API: C API, C++ API, implementations in Java, Julia, etc.
 
 The long-term goal of our work is to investigate how interaction nets can help solve challenges with irregular parallelism and, possibly, with kernel fusion.
 In this work, we do not focus on the GraphBLAS API implementation, but we are inspired by it: we implemented a minimal set of generic data structures and operations sufficient to implement several classic graph analysis algorithms.
@@ -153,44 +152,52 @@ This structure simplifies parallelization of element-wise, matrix-matrix, and ma
 However, this flexibility comes at a cost: for dense or highly regular matrices, the overhead of maintaining tree metadata and pointer indirection can outweigh the benefits of sparse storage, making traditional linear formats more efficient in such cases.
 
 
-\subsection{Interaction Nets}
+\subsection{Interaction Nets}\label{sec:interaction_nets}
 
-\label{sec:interaction_nets}
+Interaction Nets is a graph-rewriting computation model proposed by Y.~Lafont in 1989~\cite{10.1145/96709.96718} and can be defined as follows.
 
-We utilize the variant of definitions provided by Y. Lafont in 1989~\cite{10.1145/96709.96718}. Interaction Nets is a graph-rewriting model where computation proceeds through local rewriting rules applied to pairs of connected nodes.
-
-\textit{(Agent)}. An \textit{agent} is a symbol from a fixed alphabet $\Sigma$, for which:
+\begin{definition}[Agent]
+     An \textit{agent} is a symbol from a fixed alphabet $\Sigma$, for which:
 \begin{itemize}
     \item an arity is defined --- a function $Ar: \Sigma \to \mathbb{N} \cup \{0\}$;
     \item there is one \textit{principal port} and a number of \textit{auxiliary ports} equal to its arity.
 \end{itemize}
+\end{definition}
 
-\textit{(Net)}. A \textit{net} over the alphabet $\Sigma$ is a labeled undirected multi-graph in which:
+\begin{definition}[Net]
+ A \textit{net} over the alphabet $\Sigma$ is a labeled undirected multi-graph in which:
 \begin{itemize}
     \item each node is labeled by an agent;
     \item edges can only exist between ports;
     \item at most one edge enters each port.
 \end{itemize}
+\end{definition}
 
 Let $\mathcal{N}_\Sigma$ denote the set of all possible nets over the alphabet $\Sigma$.
 
-We say that a port is \textit{free} if no edge originates from it. A net can also consist simply of a set of edges, in which case each end of an edge is considered a free port.
-
-\textit{(Interface)}. The \textit{interface} $I(n)$ is the set of all free ports of a net $n$.
-
 We say that port $p_a$ is connected to port $p_b$ if there is an edge between them.
+We say that a port is \textit{free} if no edge originates from it.
+A net can also consist simply of a set of edges, in which case each end of an edge is considered a free port.
 
-Computation in Interaction Nets occurs via \textit{reductions}: rewriting an \textit{active pair} into a net. An active pair is defined as two agents connected via their principal ports.
+\begin{definition}[Interface]
+The \textit{interface} $I(n)$ is the set of all free ports of a net $n$.
+\end{definition}
 
-\textit{(Reduction Rule)}. A \textit{reduction rule} is a graph rewriting rule. Let $R$ be the set of reduction rules. More formally, a reduction rule is a triplet $r \in \Sigma \times \Sigma \times \mathcal{N}_\Sigma$, for which the following properties hold:
+Computation in Interaction Nets is defined in terms of \textit{reductions}: rewriting an \textit{active pair} into a net as defined in \emph{reduction rules}.
+An active pair consists of two agents connected by an edge between their principal ports.
+
+\begin{definition}[Reduction Rule]
+A \textit{reduction rule} is a graph rewriting rule. Let $R$ be the set of reduction rules. More formally, a reduction rule is a triplet $r \in \Sigma \times \Sigma \times \mathcal{N}_\Sigma$, for which the following properties hold:
 \begin{itemize}
     \item \textbf{Symmetry:} $(l_1, l_2, n) \in R \Rightarrow (l_2, l_1, n) \in R$
     \item \textbf{Determinism:} $(l_1, l_2, n_1) \in R \land (m_1, m_2, n_2) \in R \Rightarrow (l_1, l_2) \neq (m_1, m_2)$
     \item \textbf{Interface Preservation:} $\forall (l_1, l_2, n) \in R, Ar(l_1) + Ar(l_2) = \|I(n)\|$
 \end{itemize}
+\end{definition}
 
 An example of the computation of the net encoding of the term $(0 + 1) + (0 + 1)$ is shown in Figure~\ref{fig:net_example}.
-The set of agents is $\Sigma=\{0, S, Add\}$ with arities $Ar(0)=0$, $Ar(S)=1$ and $Ar(Add)=2$ and with the rules shown in Figure~\ref{fig:peano_rules}.
+The set of agents is $\Sigma=\{0, S, Add\}$ with arities $Ar(0)=0$, $Ar(S)=1$ and $Ar(Add)=2$.
+Reduction rules shown in Figure~\ref{fig:peano_rules}.
 The left auxiliary ports of the active $Add$-agents are connected to the net representing $1$, encoded in Peano numerals as $S(0)$, and the right auxiliary ports are connected to the third $Add$-agent.
 There is one free port~--- one of the auxiliary ports of the $Add$-agent.
 This constitutes the interface.
@@ -201,8 +208,8 @@ This constitutes the interface.
 \begin{tikzpicture}[>=Stealth, node distance=0.5cm]
 
 \begin{scope}[local bounding box=group1, baseline=(group1.center)]
-    \inetcell[draw=darkred](add1){$Add$}[U]
-    \inetcell[above=of add1.pal, draw=darkred](zero1){$0$}[D]
+    \inetcell[draw=darkred,pattern color=red!50, pattern=dots](add1){$Add$}[U]
+    \inetcell[above=of add1.pal, draw=darkred, pattern color=red!50, pattern=dots](zero1){$0$}[D]
     \inetcell[below=of add1.left pax](s1){$S$}[U]
     \inetcell[below=of s1.middle pax](zero2){$0$}[U]
     
@@ -214,8 +221,8 @@ This constitutes the interface.
     \inetwire(add1.right pax)(addMain.pal)
     \inetwirefree(addMain.right pax)
     
-    \inetcell[right=6em of add1, draw=darkred](add2){$Add$}[U]
-    \inetcell[above=of add2.pal, draw=darkred](zero3){$0$}[D]
+    \inetcell[right=6em of add1, draw=darkred, pattern color=red!50, pattern=dots](add2){$Add$}[U]
+    \inetcell[above=of add2.pal, draw=darkred, pattern color=red!50, pattern=dots](zero3){$0$}[D]
     \inetcell[below=of add2.left pax](s2){$S$}[U]
     \inetcell[below=of s2.middle pax](zero4){$0$}[U]
     
@@ -227,8 +234,8 @@ This constitutes the interface.
 \end{scope}
 
 \begin{scope}[shift={(group1.east)}, xshift=2.5cm, local bounding box=group2, baseline=(group2.center)]
-    \inetcell[draw=darkred](addRed1){$Add$}[U]
-    \inetcell[above=of addRed1.pal, draw=darkred](sRed1){$S$}[D]
+    \inetcell[draw=darkred, pattern color=red!50, pattern=dots](addRed1){$Add$}[U]
+    \inetcell[above=of addRed1.pal, draw=darkred, pattern color=red!50, pattern=dots](sRed1){$S$}[D]
     \inetcell[above = of sRed1.middle pax](zeroRed1){$0$}[D]
     \inetcell[below= of addRed1.left pax](sRed2){$S$}[U]
     \inetcell[below= of sRed2.middle pax](zeroRed2){$0$}[U]
@@ -242,9 +249,9 @@ This constitutes the interface.
 
 
 \begin{scope}[shift={(group2.east)}, xshift=2.5cm, local bounding box=group3, baseline=(group3.center)]
-    \inetcell[draw=darkred](addRed1){$Add$}[U]
+    \inetcell[draw=darkred, pattern color=red!50, pattern=dots](addRed1){$Add$}[U]
     \inetcell[below=of addRed1.right pax](sRed1){$S$}[D]
-    \inetcell[above=of addRed1.pal, draw=darkred](zeroRed1){$0$}[D]
+    \inetcell[above=of addRed1.pal, draw=darkred, pattern color=red!50, pattern=dots](zeroRed1){$0$}[D]
     \inetcell[below= of addRed1.left pax](sRed2){$S$}[U]
     \inetcell[below= of sRed2.middle pax](zeroRed2){$0$}[U]
     
@@ -358,14 +365,16 @@ This constitutes the interface.
 \label{fig:peano_rules}
 \end{figure}
 
-As shown in Lafont's work~\cite{10.1145/96709.96718}, $\lambda$-calculus can be expressed through this formalism.
-Additionally, reductions can be performed independently of each other and it has been proven that the order of reductions doesn't matter. This serves as the primary reason for the natural suitability of Interaction Nets for parallel computations.
+As shown in Lafont's work~\cite{10.1145/96709.96718}, $\lambda$-calculus can be expressed through this formalism that makes interaction nets general purpose computation model.
+On the other hand, agents and reduction rules are not predefined, so one can define custom sets of agents and reduction rules, creating domain-specific (or problem-specific) models.
+Additionally, reductions can be performed independently, and it has been proven that their order does not matter.
+This is the primary reason for the natural suitability of Interaction Nets for parallel computation.
+These properties make Interaction Nets a promising platform for graph analysis tasks, as parallel graph analysis has an irregular nature.
+At the same time, if it is possible to introduce a powerful language for describing graph analysis algorithms (e.g., linear algebra), then accelerating the final solution may be possible by creating specific agents and rules. 
 
 \subsection{Implementations of Interaction Nets}
 
- Proposed by Lafont, interaction nets can serve as a foundation for irregular parallel computations.
-
- Notable implementations include Inpla, HVM, and Vine. In OCaml~\cite{Huber_2025} (Comparison, Inpla fastest)
+Notable implementations include Inpla, HVM, and Vine. In OCaml~\cite{Huber_2025} (Comparison, Inpla fastest)
 
     Vine --- high-level language (Rust-like) + interaction-nets-based intermediate representation + parallel virtual machine.
 
