@@ -10,20 +10,29 @@ All experiments were conducted on a system with an AMD Ryzen 7 5800X 8-core proc
 \paragraph{Software.}
 We compare five implementations presented below.
 \begin{itemize}
-    \item \textbf{F\#}: Our quadtree-based implementation, compiled with F\# !!! and the .NET !!! runtime. This serves as a baseline representing a conventional functional language approach. Single thread. Benchmarkdotnet for benchmarking automation.
-	\item \textbf{Inpla}: Our interaction-net-based implementation, executed on the Inpla runtime system (version 0.13.4, patched). Settings: a 120 GB heap using a patched version of Inpla, allowing arbitrary heap size configuration with per-number-of-threads adjustments via scripting. The patch also increases several virtual machine compile-time constants to support very large trees.
-
-	A fatal bottleneck in list parsing was discovered during testing, and the fix has since been merged into the main Inpla repository.
-
-    \item \textbf{Vine}:  Our interaction-net-based implementation, executed on the Vine runtime system (version !!!). Settings: 110Gb heap per worker.
-    \item \textbf{LAGraph}: A collection of graph algorithms built on SuiteSparse:GraphBLAS (version !!!), providing state-of-the-art, linear-algebra-based reference implementations of BFS, SSSP, and triangle counting.
-    \item \textbf{NetworkX}: A popular Python library for graph analysis (version !!!), included as a baseline representing ease of use over optimization.
+    \item \textbf{F\#}: Our quadtree-based single-threaded implementation, compiled for the .NET 10.0 runtime.
+    This serves as a baseline representing a conventional functional language approach and prototype for porting to Interaction Nets.
+    BenchmarkDotNet\footnote{\url{https://github.com/dotnet/BenchmarkDotNet}}\cite{!!!} for benchmarking automation (e.g. fro JIT warmup).
+	\item \textbf{Inpla}: Our interaction-net-based implementation in Inpla low-level language, executed on the Inpla runtime system (version 0.13.4, patched).
+	Our patches of Inpla allow one to use arbitrary heap size configuration with per-thread adjustments via scripting.
+    The patch also increases several virtual machine compile-time constants to support very large trees (thus, large graphs).
+    Additionally, a bottleneck in lists parsing was discovered during testing, and the fix has since been merged into the main Inpla repository\footnote{\url{https://github.com/inpla/inpla/pull/4}}.
+    In this evaluation we use 120 GB of heap.
+    Three or five runs depending on data size.
+    \item \textbf{Vine}: Our interaction-net-based implementation in Vine high-level language, executed on the Vine runtime system\footnote{!!!}. We set 110 GB of heap per worker. Five runs for each configuration
+    \item \textbf{LAGraph}: A collection of graph algorithms built on SuiteSparse:GraphBLAS (version !!!), providing state-of-the-art, linear-algebra-based reference implementations of BFS, SSSP, and triangle counting. We use the provided algorithms as a SOTA baseline for high-performance parallel graph analysis. Also we use LAGraph as a baseline to analyze scaling across available threads.
+    Number of runs !!! 
+    \item \textbf{NetworkX}: A popular Python library for graph analysis (version !!!).
+    We use the algorithms implemented in NetworkX as a well-known baseline.
+    We do not use any special backends for NetworkX or special settings.
+    Number of runs !!!
 \end{itemize}
 
 \paragraph{Dataset.}
 We evaluate our implementations on several real-world and synthetic graphs from the SuiteSparse Matrix Collection~\cite{Kolodziej2019}.
 The graphs are chosen to represent a variety of sizes, sparsity patterns, and application domains, taking into account the capabilities and limitations of the selected competitors.
 Table~\ref{tab:datasets} summarizes number of vertices (\(|V|\)) and number of edges (\(|E|\)) of selected graphs.
+Weights were corrected by shifting all weights with respect to minimal weight over particular graph to prevent negative loops, and converted to \texttt{Int} due to Inpla does not support floats.
 
 \begin{table}[ht]
 \centering
@@ -43,7 +52,7 @@ gr\_30\_30 & 900 & 7,744 \\
 \end{tabular}
 \end{table}
 
-\paragraph{Reordering}. Patterns reordering~\ref{fig:matrices_patterns}. 
+\paragraph{Reordering.} Patterns reordering~\ref{fig:matrices_patterns}. 
 \emph{coAuthorsCiteseer} reordered only
 We can see, that some graphs.... initial is diagonal parallel...
 
@@ -52,7 +61,7 @@ We can see, that some graphs.... initial is diagonal parallel...
     \begin{subfigure}[t]{0.235\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{figures/original_coAuthors.png}
-        \caption{coAuthors}
+        \caption{coAuthorsCiteseer}
     \end{subfigure}%
     ~
     \begin{subfigure}[t]{0.235\textwidth}
@@ -60,7 +69,7 @@ We can see, that some graphs.... initial is diagonal parallel...
         %\includegraphics[width=0.8\textwidth]{figures/original_usroads_48.png}
         %\includegraphics[width=0.8\textwidth]{figures/original_boneS01.png}
         \includegraphics[width=0.9\textwidth]{figures/original_Andrews_positive.png}
-        \caption{coAuthors}
+        \caption{Andrews}
     \end{subfigure}%
     ~
     \begin{subfigure}[t]{0.235\textwidth}
@@ -68,19 +77,19 @@ We can see, that some graphs.... initial is diagonal parallel...
         %\includegraphics[width=0.8\textwidth]{figures/original_usroads_48.png}
         \includegraphics[width=0.9\textwidth]{figures/original_boneS01.png}
         %\includegraphics[width=0.8\textwidth]{figures/original_Andrews_positive.png}
-        \caption{coAuthors}
+        \caption{boneS01}
     \end{subfigure}%
     ~
     \begin{subfigure}[t]{0.235\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{figures/original_Trefethen_2000.png}
-        \caption{coAuthors}
+        \caption{Treferthen\_2000}
     \end{subfigure}%
  
     \begin{subfigure}[t]{0.235\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{figures/reordered_coAuthors.png}
-        \caption{coAuthors }
+        \caption{coAuthorsCieseer}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.235\textwidth}
@@ -88,7 +97,7 @@ We can see, that some graphs.... initial is diagonal parallel...
         %\includegraphics[width=0.8\textwidth]{figures/reordered_usroads_48.png}
         %\includegraphics[width=0.8\textwidth]{figures/reordered_boneS01.png}
         \includegraphics[width=0.9\textwidth]{figures/reordered_Andrews_positive.png}
-        \caption{coAuthors }
+        \caption{Andrews}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.235\textwidth}
@@ -96,13 +105,13 @@ We can see, that some graphs.... initial is diagonal parallel...
         %\includegraphics[width=0.8\textwidth]{figures/reordered_usroads_48.png}
         \includegraphics[width=0.9\textwidth]{figures/reordered_boneS01.png}
         %\includegraphics[width=0.8\textwidth]{figures/reordered_Andrews_positive.png}
-        \caption{coAuthors }
+        \caption{boneS01}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.235\textwidth}
         \centering
         \includegraphics[width=0.9\textwidth]{figures/reordered_Trefethen_2000.png}
-        \caption{coAuthors }
+        \caption{Treferthen\_2000 reordered}
     \end{subfigure}
     \caption{Matrices shapes: original and after reordering}
     \label{fig:matrices_patterns}
@@ -113,79 +122,133 @@ We can see, that some graphs.... initial is diagonal parallel...
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
         \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \caption{Execution time}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered_speedup.pdf}
+        \caption{Scaling}
     \end{subfigure}
-    \caption{Matrices shapes: original and after reordering}
+    \caption{Evaluation results for BFS on \emph{coAuthorsCiteseer} (reordered)}
 \end{figure*}
 
 \begin{figure*}[t!]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=0.8\textwidth]{figures/usroads_and_bone_all.pdf}
+        \caption{Execution time}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=0.8\textwidth]{figures/usroads_and_bone_all_speedup.pdf}
+        \caption{Scaling}
     \end{subfigure}
-    \caption{Matrices shapes: original and after reordering}
+    \caption{Evaluation results for BFS on \emph{bomeS01} and \emph{usroads-48} (both original and reordered)}
 \end{figure*}
 
 \begin{figure*}[t!]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
+        \includegraphics[width=0.8\textwidth]{figures/sssp_andrews_positive.pdf}
         \caption{coAuthors reordered}
     \end{subfigure}
     ~
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=0.8\textwidth]{figures/sssp_andrews_positive_scaling.pdf}
+        \caption{Scaling}
     \end{subfigure}
-    \caption{Matrices shapes: original and after reordering}
+    \caption{SSSP evaluation results for \emph{Treferthen\_2000} (both original and reordered)}
+\end{figure*}
+
+
+%\begin{figure*}[t!]
+%    \centering
+%    \begin{subfigure}[t]{0.48\textwidth}
+%        \centering
+%        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
+%        \caption{coAuthors reordered}
+%    \end{subfigure}
+%    ~
+%    \begin{subfigure}[t]{0.48\textwidth}
+%        \centering
+%        \includegraphics[width=0.8\textwidth]{figures/inpla_vs_vine_reductions_all.pdf}
+%        \caption{coAuthors reordered}
+%    \end{subfigure}
+%    \caption{Matrices shapes: original and after reordering}
+%\end{figure*}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/bfs_treferthen_2000.pdf}
+        \caption{BFS}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/sssp_treferthen_2000.pdf}
+        \caption{SSSP}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/treferthen_2000_sssp_speedup.pdf}
+        \caption{SSSP scaling}
+    \end{subfigure}
+    \caption{Evaluation results for \emph{Treferthen\_2000} (both original and reordered)}
+    
+\end{figure*}
+
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/bfs_gr_30_30.pdf}
+        \caption{BFS}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/sssp_gr_30_30.pdf}
+        \caption{SSSP}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[t]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/tc_gr_30_30.pdf}
+        \caption{Triangle counting}
+    \end{subfigure}
+    \caption{Evaluation results for \emph{gr\_30\_30} (both original and reordered)}
+    
 \end{figure*}
 
 \begin{figure*}[t!]
     \centering
-    \begin{subfigure}[t]{0.48\textwidth}
+    \begin{subfigure}[t]{0.32\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=\textwidth]{figures/sssp_gr_30_30_scaling.pdf}
+        \caption{BFS scaling}
     \end{subfigure}
     ~
-    \begin{subfigure}[t]{0.48\textwidth}
+    \begin{subfigure}[t]{0.32\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
-    \end{subfigure}
-    \caption{Matrices shapes: original and after reordering}
-\end{figure*}
-
-\begin{figure*}[t!]
-    \centering
-    \begin{subfigure}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=0.8\textwidth]{figures/inpla_vs_vine_reductions_all.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=\textwidth]{figures/tc_gr_30_30_scaling.pdf}
+        \caption{Triangle counting scaling}
     \end{subfigure}
     ~
-    \begin{subfigure}[t]{0.48\textwidth}
+    \begin{subfigure}[t]{0.32\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{figures/bfs_coAuthorsCiteseer_reordered.pdf}
-        \caption{coAuthors reordered}
+        \includegraphics[width=\textwidth]{figures/inpla_vs_vine_reductions_all.pdf}
+        \caption{Total number of interactions}
     \end{subfigure}
-    \caption{Matrices shapes: original and after reordering}
+    \caption{Inpla and Vine comparison}
     
 \end{figure*}
 
